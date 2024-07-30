@@ -1,0 +1,4 @@
+vendor/
+PHPMailer/
+smtp/
+smtp2/

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Officer Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Frank Ruhl:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Tahoma, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .navbar {
+            width: 95vw;
+            background-color: #031854;
+            padding: 20px 40px;
+            border-bottom: 20px solid #FF4900;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #ffffff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            
+        }
+
+        .navbar img {
+            height: 100px;
+            margin-right: 20px;
+        }
+
+        .navbar h1 {
+            width: 40vw;
+            margin: 0;
+            font-size: 28px;
+          padding: 20px;
+          font-family: Tahoma, sans-serif;
+            text-align: center;
+            flex-grow: 1;
+            color: #ffffff;
+            margin-right: 22vw;
+        }
+
+        .navbar a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            display: inline-block;
+        }
+
+        .navbar a:hover {
+            color: #FF4900;
+            transform: scale(1.05);
+        }
+      
+        .login-button {
+            background-color: #FF4900;
+            color: #ffffff;
+            padding: 15px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 18px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            display: inline-block;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            font-weight: 700;
+            
+        }
+
+        .login-button:hover {
+            background-color: #e03a00;
+            transform: scale(1.05);
+        }
+
+        .admin-icon-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .admin-icon {
+            font-size: 24px;
+            cursor: pointer;
+            margin-right:40px;
+            
+
+
+        }
+
+        .admin-icon:hover::after {
+            content: attr(title);
+            position: absolute;
+            left: -110%;
+            transform: translateX(20%);
+            bottom: 100%;
+            color:#e03a00;
+            padding: 5px;
+            border-radius: 5px;
+            white-space: nowrap;
+            opacity: 1;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            font-size:20px;
+        }
+
+        .admin-icon::after {
+            opacity: 0;
+        }
+
+        .content {
+            margin-top: 100px; /* Space for the fixed navbar */
+            text-align: center;
+        }
+        .content-box{
+            background: radial-gradient(circle, rgb(1, 9, 31) 0%, rgb(1, 21, 77) 70%);
+            height: 40vh;
+            width: 100vh;
+            border-radius: 50px;
+            margin-top: 20vh;
+            border-bottom: 5px solid #FF4900;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+      h2{
+        margin-top: -40px;
+        font-size: 40px;
+        color: #f0f2f5;
+
+      }
+      
+    </style>
+</head>
+
+<body>
+    <div class="background-effect"></div>
+    <div class="navbar">
+        <img src="IOL.gif" alt="logo">
+        <h1>CARTRIDGE STOCK MANAGEMENT</h1>
+        <div class="admin-icon-container">
+            <a href="adminlogin.php"><i class="fas fa-user-shield admin-icon" title="Login as Admin"></i></a>
+        </div>
+      </div>
+      <div class="nav2"></div>
+<div class="content-box">
+    <div class="content">
+         <h2>Click Here To </h2>
+        <a href="login.php" class="login-button">Login</a>
+    </div>
+</div>
+   
+
+</body>
+
+</html>
