@@ -254,6 +254,8 @@ $requests = getFilteredRequests($filter_date, $filter_action, $sort_order);
             <thead>
                 <tr>
                     <th>REQUEST NO</th>
+                    <th>USER ID</th>
+                    <th>USER</th>
                     <th>DATE</th>
                     <th>OEM</th>
                     <th>MODEL</th>
@@ -272,6 +274,8 @@ $requests = getFilteredRequests($filter_date, $filter_action, $sort_order);
                         $rowClass = ($row['ACTION'] === 'CONFIRMED') ? 'confirmed' : '';
                         echo '<tr class="' . $rowClass . '">';
                         echo '<td>' . $row['REQUEST_NO'] . '</td>';
+                        echo '<td>' . $row['USER_ID'] . '</td>';
+                        echo '<td>' . $row['USER'] . '</td>';
                         echo '<td>' . $row['DATE'] . '</td>';
                         echo '<td>' . $row['OEM'] . '</td>';
                         echo '<td>' . $row['MODEL'] . '</td>';
