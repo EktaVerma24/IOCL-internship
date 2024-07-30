@@ -1,9 +1,9 @@
 <?php
-$host = "localhost";
-$username = "root";
-$password = "1234321";  // Ensure this matches the MYSQL_ROOT_PASSWORD in Docker Compose
-$database = "iocl";
-$port = 3307;  // Use the port you've mapped
+$host = getenv('DB_HOST');       // Database hostname (provided by Render)
+$username = getenv('DB_USER');   // Database username (provided by Render)
+$password = getenv('DB_PASS');   // Database password (provided by Render)
+$database = getenv('DB_NAME');   // Database name (provided by Render)
+$port = getenv('DB_PORT');       // Database port (usually 3306 for MySQL)
 
 // Create connection
 $conn = new mysqli($host, $username, $password, $database, $port);
@@ -13,4 +13,5 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 ?>
+
 
