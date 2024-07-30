@@ -1,9 +1,9 @@
 <?php
-$host = getenv('DB_HOST');       // Database hostname (provided by Render)
-$username = getenv('DB_USER');   // Database username (provided by Render)
-$password = getenv('DB_PASS');   // Database password (provided by Render)
-$database = getenv('DB_NAME');   // Database name (provided by Render)
-$port = getenv('DB_PORT');       // Database port (usually 3306 for MySQL)
+$host = getenv('DB_HOST') ?: 'localhost';  // Fallback to localhost if not set
+$username = getenv('DB_USER') ?: 'root';   // Fallback to root if not set
+$password = getenv('DB_PASS') ?: '';       // Fallback to empty string if not set
+$database = getenv('DB_NAME') ?: 'iocl';   // Fallback to iocl if not set
+$port = getenv('DB_PORT') ?: 3306;         // Fallback to 3306 if not set
 
 // Create connection
 $conn = new mysqli($host, $username, $password, $database, $port);
@@ -13,5 +13,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 ?>
+
+
 
 
