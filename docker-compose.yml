@@ -3,16 +3,18 @@ version: '3.1'
 services:
 
   web:
-    image: php:8.1-apache
+    build: .
     volumes:
       - .:/var/www/html
     ports:
       - "80:80"
+    depends_on:
+      - db
 
   db:
     image: mysql:5.7
     environment:
-      MYSQL_ROOT_PASSWORD: yourpassword
+      MYSQL_ROOT_PASSWORD: 1234321  # Set your root password here
       MYSQL_DATABASE: iocl
     ports:
-      - "3306:3306"
+      - "3307:3306"  # Map local port 3307 to container port 3306
