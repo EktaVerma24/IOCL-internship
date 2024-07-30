@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officer Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Frank Ruhl:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <style>
@@ -36,7 +36,7 @@
             left: 0;
             z-index: 1000;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            
+
         }
 
         .navbar img {
@@ -48,8 +48,8 @@
             width: 40vw;
             margin: 0;
             font-size: 28px;
-          padding: 20px;
-          font-family: Tahoma, sans-serif;
+            padding: 20px;
+            font-family: Tahoma, sans-serif;
             text-align: center;
             flex-grow: 1;
             color: #ffffff;
@@ -70,7 +70,7 @@
             color: #FF4900;
             transform: scale(1.05);
         }
-      
+
         .login-button {
             background-color: #FF4900;
             color: #ffffff;
@@ -83,7 +83,7 @@
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
             text-transform: uppercase;
             font-weight: 700;
-            
+
         }
 
         .login-button:hover {
@@ -99,10 +99,7 @@
         .admin-icon {
             font-size: 24px;
             cursor: pointer;
-            margin-right:40px;
-            
-
-
+            margin-right: 40px;
         }
 
         .admin-icon:hover::after {
@@ -111,14 +108,14 @@
             left: -110%;
             transform: translateX(20%);
             bottom: 100%;
-            color:#e03a00;
+            color: #e03a00;
             padding: 5px;
             border-radius: 5px;
             white-space: nowrap;
             opacity: 1;
             pointer-events: none;
             transition: opacity 0.2s;
-            font-size:20px;
+            font-size: 20px;
         }
 
         .admin-icon::after {
@@ -126,10 +123,12 @@
         }
 
         .content {
-            margin-top: 100px; /* Space for the fixed navbar */
+            margin-top: 100px;
+            /* Space for the fixed navbar */
             text-align: center;
         }
-        .content-box{
+
+        .content-box {
             background: radial-gradient(circle, rgb(1, 9, 31) 0%, rgb(1, 21, 77) 70%);
             height: 40vh;
             width: 100vh;
@@ -140,13 +139,13 @@
             display: flex;
             justify-content: center;
         }
-      h2{
-        margin-top: -40px;
-        font-size: 40px;
-        color: #f0f2f5;
 
-      }
-      
+        h2 {
+            margin-top: -40px;
+            font-size: 40px;
+            color: #f0f2f5;
+        }
+
     </style>
 </head>
 
@@ -156,17 +155,29 @@
         <img src="IOL.gif" alt="logo">
         <h1>CARTRIDGE STOCK MANAGEMENT</h1>
         <div class="admin-icon-container">
-            <a href="adminlogin.php"><i class="fas fa-user-shield admin-icon" title="Login as Admin"></i></a>
+            <a href="adminlogin.php"><i class="fas fa-user-shield admin-icon" id="adminloginbutton" title="Login as Admin"></i></a>
         </div>
-      </div>
-      <div class="nav2"></div>
-<div class="content-box">
-    <div class="content">
-         <h2>Click Here To </h2>
-        <a href="login.php" class="login-button">Login</a>
     </div>
-</div>
-   
+    <div class="nav2"></div>
+    <div class="content-box">
+        <div class="content">
+            <h2>Click Here To </h2>
+            <a href="login.php" class="login-button" id="loginButton">Login</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("adminloginbutton").addEventListener("click", function (event) {
+            event.preventDefault();
+            window.location.href = "adminlogin.php"; // Change to your login.html or actual URL
+            
+        });
+            document.getElementById("loginButton").addEventListener("click", function (event) {
+            event.preventDefault();
+            window.location.href = "login.php"; // Change to your login.html or actual URL
+            
+        });
+    </script>
 
 </body>
 
