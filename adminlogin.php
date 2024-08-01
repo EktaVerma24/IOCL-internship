@@ -1,4 +1,7 @@
 <?php
+ob_start(); // Start output buffering
+session_start();
+
 // Initialize variables
 $showError = "";
 
@@ -20,12 +23,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Check if a record is found
         if ($row = mysqli_fetch_assoc($result)) {
-            // Debug: Print the hashed password from the database
-            // echo 'Stored Hashed Password: ' . $row['PASSWORD'] . '<br>';
-
             // Verify the password
             if ($password === $row['PASSWORD']) {
-                session_start();
                 $_SESSION['loggedin'] = true;
                 $_SESSION['USERNAME'] = $username;
 
@@ -45,8 +44,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     mysqli_stmt_close($stmt);
     mysqli_close($conn);
 }
-?>
 
+ob_end_flush(); // Flush the output buffer and turn off output buffering
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -159,4 +159,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 </body>
 </html>
+
 
