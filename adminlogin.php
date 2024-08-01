@@ -1,55 +1,58 @@
 <?php
-session_start(); // Ensure this is at the very top
-
 // Initialize variables
-$login = false;
-$showError = false;
+$showError = "";
 
+// Check if the form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Include database connection file
-    include 'partials/connect.php';
+    include 'partials/connect.php'; // Include database connection file
 
-    $USER = $_POST["username"];
+    $username = $_POST["username"];
     $password = $_POST["password"];
 
     // Using prepared statement to prevent SQL injection
-    $sql = "SELECT * FROM user_details WHERE USER=? AND PASSWORD=?";
+    $sql = "SELECT * FROM admin WHERE USERNAME=?";
     $stmt = mysqli_stmt_init($conn);
+
     if (mysqli_stmt_prepare($stmt, $sql)) {
-        mysqli_stmt_bind_param($stmt, "ss", $USER, $password);
+        mysqli_stmt_bind_param($stmt, "s", $username);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
 
+        // Check if a record is found
         if ($row = mysqli_fetch_assoc($result)) {
-            $_SESSION['loggedin'] = true;
-            $_SESSION['USER'] = $USER;
-            $_SESSION['USER_TYPE'] = $row['USER_TYPE'];
+            // Debug: Print the hashed password from the database
+            // echo 'Stored Hashed Password: ' . $row['PASSWORD'] . '<br>';
 
-            // Redirect based on user type
-            if ($row['USER_TYPE'] == "engineer") {
-                header("Location: engineer.php");
-                exit;
-            } elseif ($row['USER_TYPE'] == "user") {
-                header("Location: welcome.php");
+            // Verify the password
+            if ($password === $row['PASSWORD']) {
+                session_start();
+                $_SESSION['loggedin'] = true;
+                $_SESSION['USERNAME'] = $username;
+
+                header("Location: admin.php"); // Redirect to admin.php
                 exit;
             } else {
-                header("Location: officer.php");
-                exit;
+                $showError = "Invalid Credentials: Incorrect password";
             }
         } else {
-            $showError = "Invalid Credentials";
+            $showError = "Invalid Credentials: Username not found";
         }
     } else {
-        $showError = "Database query failed.";
+        $showError = "SQL error: " . mysqli_stmt_error($stmt);
     }
+
+    // Close connections
+    mysqli_stmt_close($stmt);
+    mysqli_close($conn);
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login Page</title>
+    <title>Admin Login</title>
     <style>
         /* Basic styling */
         body {
@@ -120,11 +123,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 4px;
             width: 100%;
             text-align: center;
-            display: block;
+            display: block; /* Changed from none to block to show alerts */
         }
         .alert-success {
-            background-color: #c3e6cb;
-            border-color: #a4d2a5;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
             color: #155724;
         }
         .alert-danger {
@@ -135,23 +138,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Admin Login</h1>
-        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit">Login</button>
-            <?php if ($showError): ?>
-                <div class="alert alert-danger"><?= htmlspecialchars($showError) ?></div>
-            <?php endif; ?>
-        </form>
-    </div>
+
+<div class="container">
+    <h1>Admin Login</h1>
+    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit">Login</button>
+        <?php if ($showError): ?>
+            <div class="alert alert-danger"><?= htmlspecialchars($showError) ?></div>
+        <?php endif; ?>
+    </form>
+</div>
+
 </body>
 </html>
 
