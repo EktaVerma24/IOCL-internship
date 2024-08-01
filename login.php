@@ -1,6 +1,6 @@
 <?php
 session_start();
-header("Location:https://iocl-internship.onrender.com");
+header("Location: index.html");
 exit;
 
 $login = false;
