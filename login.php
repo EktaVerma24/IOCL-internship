@@ -1,5 +1,4 @@
 <?php
-// Ensure there is no output before this point
 session_start();
 
 $login = false;
@@ -152,6 +151,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
 </body>
 </html>
+
 
 
 
