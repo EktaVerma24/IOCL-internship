@@ -1,5 +1,7 @@
 <?php
+// Ensure there is no output before this point
 session_start();
+
 $login = false;
 $showError = false;
 
