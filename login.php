@@ -1,8 +1,8 @@
 <?php
 session_start(); // Start the session
 
-$login = false; // Initialize $login variable
-$showError = false; // Initialize $showError variable
+$login = false;
+$showError = false;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     include 'partials/connect.php'; // Include database connection file
@@ -21,13 +21,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($row = mysqli_fetch_assoc($result)) {
             $_SESSION['loggedin'] = true;
             $_SESSION['USER'] = $USER;
-            $_SESSION['USER_TYPE'] = $row['USER_TYPE']; // Store usertype in session
+            $_SESSION['USER_TYPE'] = $row['USER_TYPE'];
 
             if ($row['USER_TYPE'] == "engineer") {
-                header("Location: engineer.php"); // Redirect to engineer.php
+                header("Location: engineer.php");
                 exit;
             } elseif ($row['USER_TYPE'] == "user") {
-                header("Location: welcome.php"); // Redirect to welcome.php
+                header("Location: welcome.php");
                 exit;
             } else {
                 header("Location: officer.php");
@@ -117,15 +117,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 4px;
             width: 100%;
             text-align: center;
-            display: block; /* Ensure alert is visible */
+            display: block;
         }
         .alert-success {
-            background-color: #c3e6cb; /* Green color for success */
+            background-color: #c3e6cb;
             border-color: #a4d2a5;
             color: #155724;
         }
         .alert-danger {
-            background-color: #f8d7da; /* Red color for error */
+            background-color: #f8d7da;
             border-color: #f5c6cb;
             color: #721c24;
         }
@@ -151,6 +151,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
 </body>
 </html>
+
 
 
 
