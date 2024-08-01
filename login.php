@@ -1,5 +1,7 @@
 <?php
-session_start(); // Start the session
+session_start();
+header("Location: http://index.html");
+exit;
 
 $login = false;
 $showError = false;
