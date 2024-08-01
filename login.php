@@ -1,5 +1,5 @@
 <?php
-session_start(); // Start the session at the top of the file
+session_start(); // Start the session
 
 $login = false; // Initialize $login variable
 $showError = false; // Initialize $showError variable
@@ -41,7 +41,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -152,6 +151,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
 </body>
 </html>
+
 
 
            
