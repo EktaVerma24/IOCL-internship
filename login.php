@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Start output buffering
 session_start();
 
 $login = false;
@@ -40,6 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $showError = "Database query failed.";
     }
 }
+ob_end_flush(); // Flush the output buffer and turn off output buffering
 ?>
 <!DOCTYPE html>
 <html lang="en">
