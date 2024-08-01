@@ -1,8 +1,5 @@
 <?php
 session_start();
-header("Location: index.html");
-exit;
-
 $login = false;
 $showError = false;
 
