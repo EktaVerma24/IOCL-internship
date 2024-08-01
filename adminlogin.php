@@ -47,6 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 ob_end_flush(); // Flush the output buffer and turn off output buffering
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -159,5 +160,6 @@ ob_end_flush(); // Flush the output buffer and turn off output buffering
 
 </body>
 </html>
+
 
 
