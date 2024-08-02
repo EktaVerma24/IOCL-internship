@@ -5,38 +5,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officer Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
     <style>
         html, body {
             height: 100%;
             margin: 0;
-            font-family: Tahoma, sans-serif;
-            background-color: #f0f2f5;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #020130, #2c3e50);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #333;
+            color: #ffffff;
         }
 
         .navbar {
-            width: 95vw;
-            background-color: #031854;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 0px;
             padding: 20px 40px;
-            border-bottom: 20px solid #FF4900;
             display: flex;
             align-items: center;
             justify-content: space-between;
             color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.5s ease-in-out;
             position: fixed;
             top: 0;
             left: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border-bottom:2px solid #ff4500;
+        }
 
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+            }
         }
 
         .navbar img {
@@ -45,15 +54,13 @@
         }
 
         .navbar h1 {
-            width: 40vw;
             margin: 0;
-            font-size: 28px;
-            padding: 20px;
-            font-family: Tahoma, sans-serif;
+            font-size: 24px;
             text-align: center;
             flex-grow: 1;
             color: #ffffff;
-            margin-right: 22vw;
+            margin-right: 25vw;
+            font-size: 5vh;
         }
 
         .navbar a {
@@ -64,31 +71,43 @@
             border-radius: 25px;
             transition: background-color 0.3s ease, transform 0.3s ease;
             display: inline-block;
+            margin-right: 3vw;
         }
 
         .navbar a:hover {
-            color: #FF4900;
+           color: #ff4500;
             transform: scale(1.05);
         }
 
         .login-button {
-            background-color: #FF4900;
+            background-color: #ff4500;
             color: #ffffff;
             padding: 15px 30px;
             border-radius: 30px;
             text-decoration: none;
             font-size: 18px;
-            transition: background-color 0.3s ease, transform 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
             display: inline-block;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
             text-transform: uppercase;
-            font-weight: 700;
+            font-weight: 600;
+            animation: pulse 1.5s infinite;
+            margin-bottom: 14vh;
+        }
 
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
         }
 
         .login-button:hover {
             background-color: #e03a00;
             transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
 
         .admin-icon-container {
@@ -99,23 +118,30 @@
         .admin-icon {
             font-size: 24px;
             cursor: pointer;
-            margin-right: 40px;
+            margin-right: 55px;
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+
+        .admin-icon:hover {
+            color: #ff4500;
+            transform: scale(1.2);
         }
 
         .admin-icon:hover::after {
             content: attr(title);
             position: absolute;
-            left: -110%;
-            transform: translateX(20%);
+            left: 50%;
+            transform: translateX(-50%);
             bottom: 100%;
-            color: #e03a00;
+            color: #ff4500;
             padding: 5px;
             border-radius: 5px;
             white-space: nowrap;
             opacity: 1;
             pointer-events: none;
             transition: opacity 0.2s;
-            font-size: 20px;
+            font-size: 16px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .admin-icon::after {
@@ -123,34 +149,52 @@
         }
 
         .content {
-            margin-top: 100px;
-            /* Space for the fixed navbar */
+            margin-top: 60px; /* Reduced space from navbar */
             text-align: center;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .content-box {
-            background: radial-gradient(circle, rgb(1, 9, 31) 0%, rgb(1, 21, 77) 70%);
-            height: 40vh;
-            width: 100vh;
-            border-radius: 50px;
-            margin-top: 20vh;
-            border-bottom: 5px solid #FF4900;
-            padding: 0;
+            height: 25vh; /* Reduced height of content box */
+            width: 20vw;
+            background: rgba(3, 0, 27, 0.493);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            margin-top: 20px; /* Removed gap between heading and box */
+            border-bottom: 2px solid #ff4500;
+            border-right: 2px solid #ff4500;
+            padding: 40px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            justify-content:center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 1s ease-in-out;
+            color: #ffffff;
         }
 
         h2 {
-            margin-top: -40px;
-            font-size: 40px;
-            color: #f0f2f5;
+            font-size: 36px;
+            color: #ffffff;
+            margin-bottom: 20px; /* Adjusted margin to reduce gap */
         }
 
     </style>
 </head>
 
 <body>
-    <div class="background-effect"></div>
     <div class="navbar">
         <img src="IOL.gif" alt="logo">
         <h1>CARTRIDGE STOCK MANAGEMENT</h1>
@@ -158,10 +202,9 @@
             <a href="adminlogin.php"><i class="fas fa-user-shield admin-icon" id="adminloginbutton" title="Login as Admin"></i></a>
         </div>
     </div>
-    <div class="nav2"></div>
     <div class="content-box">
         <div class="content">
-            <h2>Click Here To </h2>
+            <h2>Click Here To</h2>
             <a href="login.php" class="login-button" id="loginButton">Login</a>
         </div>
     </div>
@@ -170,15 +213,13 @@
         document.getElementById("adminloginbutton").addEventListener("click", function (event) {
             event.preventDefault();
             window.location.href = "adminlogin.php"; // Change to your login.html or actual URL
-            
         });
-            document.getElementById("loginButton").addEventListener("click", function (event) {
+
+        document.getElementById("loginButton").addEventListener("click", function (event) {
             event.preventDefault();
             window.location.href = "login.php"; // Change to your login.html or actual URL
-            
         });
     </script>
-
 </body>
 
 </html>
