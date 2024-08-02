@@ -43,76 +43,100 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 ob_end_flush(); // Flush the output buffer and turn off output buffering
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Page</title>
+    <title>User Login Portal</title>
     <style>
-        /* Basic styling */
-        body {
-            font-family: Tahoma, sans-serif;
-            background-color: #f0f0f0;
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+        * {
             margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
         }
-        .container {
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2c3e50, #020130); /* Dark blue ombre effect */
+        }
+        .login-box {
             width: 400px;
             padding: 40px;
-            background-color: #fff;
-            border-radius: 15px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
+            background: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8);
         }
-        h1 {
-            color: #031854;
-            margin-top: 10px;
+        .login-box form {
+            width: 100%;
+        }
+        h2 {
+            font-size: 2em;
+            color: #ff4500; /* IOCL orange */
+            text-align: center;
             margin-bottom: 20px;
         }
-        form {
-            display: flex;
-            flex-direction: column;
+        .input-box {
+            position: relative;
+            margin: 25px 0;
         }
-        .form-group {
-            margin-bottom: 15px;
-            text-align: left;
+        .input-box input {
+            width: 100%;
+            height: 50px;
+            background: transparent;
+            border: 2px solid #020130; /* IOCL blue */
+            outline: none;
+            border-radius: 40px;
+            font-size: 1em;
+            color: #2c3e50; /* IOCL blue */
+            padding: 0 20px;
+            transition: .5s ease;
         }
-        label {
-            font-weight: bold;
-            color: #031854;
-            display: block;
-            margin-bottom: 5px;
-            margin-left: 10px;
+        .input-box input:focus,
+        .input-box input:valid {
+            border-color: #ff4500; /* IOCL orange */
         }
-        input[type="text"],
-        input[type="password"] {
-            width: calc(100% - 22px);
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 20px;
-            margin-top: 5px;
+        .input-box label {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            font-size: 1em;
+            color: #2c3e50; /* IOCL blue */
+            pointer-events: none;
+            transition: .5s ease;
         }
-        button {
-            background-color: #031854;
-            color: #fff;
+        .input-box input:focus ~ label,
+        .input-box input:valid ~ label {
+            top: 1px;
+            font-size: .8em;
+            padding: 0 6px;
+            color: #ff4500; /* IOCL orange */
+            background-color: #f9f9f9;
+        }
+        .btn {
+            width: 100%;
+            height: 45px;
+            background: #ff4500; /* IOCL orange */
             border: none;
-            padding: 10px 20px;
-            font-size: 16px;
+            outline: none;
+            border-radius: 40px;
             cursor: pointer;
-            border-radius: 30px;
+            font-size: 1em;
+            color: #fff;
+            font-weight: 600;
+            margin-top: 20px;
             transition: background-color 0.3s ease;
-            margin-top: 10px;
         }
-        button:hover {
-            background-color: #FF4900;
+        .btn:hover {
+            background: #020130; /* Darker shade of IOCL orange */
         }
-        /* Alert styling */
         .alert {
             padding: 15px;
             margin-top: 20px;
@@ -134,18 +158,18 @@ ob_end_flush(); // Flush the output buffer and turn off output buffering
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Login To Your Profile</h1>
+    <div class="login-box">
+        <h2>USER LOGIN PORTAL</h2>
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+            <div class="input-box">
+                <input type="text" name="username" required>
+                <label>Username</label>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+            <div class="input-box">
+                <input type="password" name="password" required>
+                <label>Password</label>
             </div>
-            <button type="submit">Login</button>
+            <button type="submit" class="btn">Login</button>
             <?php if ($showError): ?>
                 <div class="alert alert-danger"><?= htmlspecialchars($showError) ?></div>
             <?php endif; ?>
@@ -153,11 +177,3 @@ ob_end_flush(); // Flush the output buffer and turn off output buffering
     </div>
 </body>
 </html>
-
-
-
-
-
-
-
-           
