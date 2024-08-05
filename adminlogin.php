@@ -67,7 +67,7 @@ ob_end_flush(); // Flush the output buffer and turn off output buffering
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, #2c3e50, #020130); /* Dark blue ombre effect */
+            background: linear-gradient(135deg, #ffffff, #d4e9fd);
         }
         .login-box {
             width: 400px;
