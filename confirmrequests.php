@@ -38,6 +38,29 @@ while ($row = mysqli_fetch_assoc($query_run)) {
     $orders[] = $row;
 }
 
+// Fetch cartridge information from current_stock
+$cartridge_query = "SELECT OEM, MODEL, CARTRIDGE FROM current_stock";
+$cartridge_result = mysqli_query($conn, $cartridge_query);
+
+$cartridge_options = array();
+$fixed_cartridges = array(); // To store fixed cartridge values
+
+while ($row = mysqli_fetch_assoc($cartridge_result)) {
+    $key = $row['OEM'] . '-' . $row['MODEL'];
+    if (!isset($cartridge_options[$key])) {
+        $cartridge_options[$key] = array();
+    }
+    $cartridge_options[$key][] = $row['CARTRIDGE'];
+}
+
+// Determine fixed cartridges
+foreach ($cartridge_options as $key => $cartridges) {
+    if (count($cartridges) === 1) {
+        list($oem, $model) = explode('-', $key);
+        $fixed_cartridges[$oem][$model] = $cartridges[0];
+    }
+}
+
 // Process individual confirmation request
 if (isset($_GET['REQUEST_NO'], $_GET['CONFIRMED'], $_GET['OEM'])) {
     $REQUEST_NO = $_GET['REQUEST_NO'];
@@ -171,26 +194,25 @@ if (isset($_POST['confirm_batch'])) {
                 // Send email
                 $mail->send();
             } catch (Exception $e) {
-                $_SESSION['notification'] = "Email sending failed for request #$request_no. Error: {$mail->ErrorInfo}";
+                $_SESSION['notification'] = "Email sending failed. Error: {$mail->ErrorInfo}";
+                break; // Exit loop on email sending failure
             }
-
-            // Clear the recipient address for the next loop
-            $mail->clearAddresses();
         }
     }
 
     $_SESSION['notification'] = "Selected requests have been confirmed and notification emails have been sent.";
+
+    // Redirect to the same page after updates
     header("location: confirmrequests.php");
     exit;
 }
 
 // Clear filters
 if (isset($_GET['clear_filters'])) {
-    header("location: confirmrequests.php");
+    header("Location: confirmrequests.php");
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -213,216 +235,182 @@ if (isset($_GET['clear_filters'])) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-
-        nav .navbar-heading {
-            font-size: 24px;
-            font-weight: 700;
-            color: #ffffff;
-        }
-
-        nav ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            gap: 20px;
-        }
-
-        nav ul li a {
+        nav a {
             color: #fff;
             text-decoration: none;
-            padding: 10px 15px;
-            display: block;
-            transition: background-color 0.3s ease;
+            margin-left: 20px;
         }
-
-        nav ul li a:hover {
-            background-color: #FF4900;
-            border-radius: 8px;
-        }
-
-        .req {
-            width: 10vw;
+        nav a.btn {
+            background-color: #007bff;
+            padding: 10px 20px;
+            border-radius: 4px;
         }
         .container {
-            width: 90%;
-            max-width: 1200px;
-            margin: 80px auto 20px auto; 
             padding: 20px;
+            max-width: 1200px;
+            margin: 20px auto;
             background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #031854;
-        }
-        .notification, .error {
+            text-align: center;
             margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        form input[type="date"],
+        form select {
+            margin: 0 10px;
             padding: 10px;
-            border-radius: 5px;
-            background-color: #e0e0e0;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            width: 200px;
         }
-        .notification {
-            color: green;
-            background-color: #d4edda;
-        }
-        .error {
-            color: red;
-            background-color: #f8d7da;
-        }
-        button, .button {
+        form button,
+        .btn {
             padding: 10px 20px;
-            background-color: #031854; /* Deep blue */
+            font-size: 16px;
+            background-color: #031854;
             color: #fff;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            text-decoration: none;
+            transition: background-color 0.3s ease;
         }
-        button:hover, .button:hover {
-            background-color: #FF4900; /* Darker blue */
+        form button:hover,
+        .btn:hover {
+            background-color: #1a3cb1;
         }
-        .filter-form, .batch-confirm-form {
-            margin-bottom: 20px;
-
-        }
-        .batch-confirm-form button{
-            margin-bottom: 10px;
+        .table-container {
+            overflow-x: auto;
+            width: full;
         }
         table {
-            width: 100%;
+            width: 90%;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-        th, td {
-            height: 30px;
+        table th,
+        table td {
             padding: 10px;
+            border: 1px solid #ddd;
             text-align: left;
-            text-decoration: none;
+            font-size: 16px;
         }
-        th {
-            background-color: #f4f4f4;
+        table th {
+            background-color: #f8f8f8;
         }
-        tr.pending {
-            background-color: #f8d7da; /* Light red */
+        table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
         }
-        input[type="text"], input[type="date"], select {
-            padding: 5px;
-            margin: 5px 0;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-        .checkbox-column {
-            width: 5%;
-        }
-        .dropdown {
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            background-color: #fff;
+        .btn-container {
+            text-align: center;
         }
     </style>
 </head>
 <body>
-<nav>
-        <div class="navbar-heading">View All Requests</div>
-        <ul>
-            <li><a href="engineer.php">Home</a></li>
-           <li><a href="#" onclick="confirmLogout(event)">Logout</a> </li>        </ul>
-    </nav>
-<div class="container">
-    <?php if (isset($_SESSION['notification'])): ?>
-        <div class="notification">
-            <?php 
-            echo $_SESSION['notification']; 
-            unset($_SESSION['notification']);
-            ?>
+    <nav>
+        <div>Welcome, Engineer</div>
+        <div>
+            <a href="logout.php" class="btn">Logout</a>
         </div>
-    <?php endif; ?>
-    
-    <form action="confirmrequests.php" method="get" class="filter-form">
-        <label for="filter_date">Filter by Date:</label>
-        <input type="date" id="filter_date" name="filter_date" value="<?php echo htmlspecialchars($filter_date); ?>">
-        <label for="filter_action">Filter by Action:</label>
-        <select id="filter_action" name="filter_action">
-            <option value="">All</option>
-            <option value="PENDING" <?php echo $filter_action == 'PENDING' ? 'selected' : ''; ?>>Pending</option>
-            <option value="CONFIRMED" <?php echo $filter_action == 'CONFIRMED' ? 'selected' : ''; ?>>Confirmed</option>
-        </select>
-        <label for="sort_order">Sort by Date:</label>
-        <select id="sort_order" name="sort_order">
-            <option value="DESC" <?php echo $sort_order == 'DESC' ? 'selected' : ''; ?>>Descending</option>
-            <option value="ASC" <?php echo $sort_order == 'ASC' ? 'selected' : ''; ?>>Ascending</option>
-        </select>
-        <button type="submit">Apply Filters</button>
-        <a href="confirmrequests.php?clear_filters=true" class="button" style="background-color:#f3452a; color: #ffff;text-decoration:none;">Clear Filters</a>
-    </form>
+    </nav>
 
-    <form action="confirmrequests.php" method="post" class="batch-confirm-form">
-        <button type="submit" name="confirm_batch">Confirm Selected Requests</button>
-        <table>
-            <thead>
-                <tr>
-                    <th class="checkbox-column">Select</th>
-                    <th>Request No</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Action</th>
-                    <th>OEM</th>
-                    <th>Model</th>
-                    <th>Cartridge</th>
-                    <th>Confirm</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($orders as $order): ?>
-                    <tr class="<?php echo $order['ACTION'] == 'PENDING' ? 'pending' : ''; ?>">
-                        <?php if ($order['ACTION'] != 'CONFIRMED'): ?>
-                            <td class="checkbox-column"><input type="checkbox" name="selected_requests[]" value="<?php echo htmlspecialchars($order['REQUEST_NO']); ?>"></td>
-                        <?php else: ?>
-                            <td class="checkbox-column"></td>
-                        <?php endif; ?>
-                        <td><?php echo htmlspecialchars($order['REQUEST_NO']); ?></td>
-                        <td><?php echo htmlspecialchars($order['DATE']); ?></td>
-                        <td><?php echo htmlspecialchars($order['TIME']); ?></td>
-                        <td><?php echo htmlspecialchars($order['ACTION']); ?></td>
-                        <td><?php echo htmlspecialchars($order['OEM']); ?></td>
-                        <td><?php echo htmlspecialchars($order['MODEL']); ?></td>
-                        <td>
-                            <?php if ($order['OEM'] == 'HP'&& $order['ACTION'] != 'CONFIRMED'): ?>
-                                <select name="CARTRIDGE_<?php echo htmlspecialchars($order['REQUEST_NO']); ?>" class="dropdown">
-                                    <!-- Add options here -->
-                                    <option value="Cartridge1" <?php echo $order['CARTRIDGE'] == 'BLACK' ? 'selected' : ''; ?>>BLACK</option>
-                                    <option value="Cartridge2" <?php echo $order['CARTRIDGE'] == 'MAGENTA' ? 'selected' : ''; ?>>MAGENTA</option>
-                                    <option value="Cartridge2" <?php echo $order['CARTRIDGE'] == 'CYAN' ? 'selected' : ''; ?>>CYAN</option>
-                                    <option value="Cartridge2" <?php echo $order['CARTRIDGE'] == 'YELLOW' ? 'selected' : ''; ?>>YELLOW</option>
-                                </select>
-                            <?php else: ?>
-                                <?php echo htmlspecialchars($order['CARTRIDGE']); ?></td>                            <?php endif; ?>
-                        
-                        <?php if ($order['ACTION'] != 'CONFIRMED'): ?>
-                            <td><a href="confirmrequests.php?REQUEST_NO=<?php echo htmlspecialchars($order['REQUEST_NO']); ?>&CONFIRMED=YES&CARTRIDGE=<?php echo htmlspecialchars($order['CARTRIDGE']); ?>&OEM=<?php echo htmlspecialchars($order['OEM']); ?>" class="button">Confirm</a></td>
-                        <?php else: ?>
-                            <td></td>
-                        <?php endif; ?>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </form>
-</div>
-<script src="partials/logout.js"></script>
+    <div class="container">
+        <h1>Confirm Requests</h1>
 
+        <form action="confirmrequests.php" method="get">
+            <input type="date" name="filter_date" value="<?php echo htmlspecialchars($filter_date); ?>">
+            <select name="filter_action">
+                <option value="">Select Action</option>
+                <option value="PENDING" <?php if ($filter_action === 'PENDING') echo 'selected'; ?>>Pending</option>
+                <option value="CONFIRMED" <?php if ($filter_action === 'CONFIRMED') echo 'selected'; ?>>Confirmed</option>
+            </select>
+            <button type="submit">Filter</button>
+            <a href="confirmrequests.php?clear_filters=1" class="btn">Clear Filters</a>
+        </form>
+
+        <?php if (isset($_SESSION['notification'])): ?>
+            <div class="notification">
+                <?php echo $_SESSION['notification']; unset($_SESSION['notification']); ?>
+            </div>
+        <?php endif; ?>
+
+        <form action="confirmrequests.php" method="post">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Request No</th>
+                            <th>User</th>
+                            <th>User ID</th>
+                            <th>OEM</th>
+                            <th>Model</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Action</th>
+                            <th>Cartridge</th>
+                            <th>Confirm</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($orders as $order): ?>
+                            <tr class="table">
+                                <td><input type="checkbox" name="selected_requests[]" value="<?php echo htmlspecialchars($order['REQUEST_NO']); ?>"></td>
+                                <td><?php echo htmlspecialchars($order['REQUEST_NO']); ?></td>
+                                <td><?php echo htmlspecialchars($order['USER']); ?></td>
+                                <td><?php echo htmlspecialchars($order['USER_ID']); ?></td>
+                                <td><?php echo htmlspecialchars($order['OEM']); ?></td>
+                                <td><?php echo htmlspecialchars($order['MODEL']); ?></td>
+                                <td><?php echo htmlspecialchars($order['DATE']); ?></td>
+                                <td><?php echo htmlspecialchars($order['TIME']); ?></td>
+                                <td><?php echo htmlspecialchars($order['ACTION']); ?></td>
+                                <td>
+                                    <?php
+                                    $oem = $order['OEM'];
+                                    $model = $order['MODEL'];
+
+                                    if (isset($fixed_cartridges[$oem][$model])) {
+                                        // Fixed cartridge value
+                                        $fixed_cartridge = $fixed_cartridges[$oem][$model];
+                                        echo '<input type="hidden" name="CARTRIDGE_' . htmlspecialchars($order['REQUEST_NO']) . '" value="' . htmlspecialchars($fixed_cartridge) . '">';
+                                        echo htmlspecialchars($fixed_cartridge);
+                                    } else {
+                                        // Display options for cartridges
+                                        echo '<select name="CARTRIDGE_' . htmlspecialchars($order['REQUEST_NO']) . '">';
+                                        echo '<option value="">Select Cartridge</option>';
+                                        if (isset($cartridge_options[$oem . '-' . $model])) {
+                                            foreach ($cartridge_options[$oem . '-' . $model] as $option) {
+                                                echo '<option value="' . htmlspecialchars($option) . '">' . htmlspecialchars($option) . '</option>';
+                                            }
+                                        }
+                                        echo '</select>';
+                                    }
+                                    ?>
+                                </td>
+                                <td class="cnfrm button">
+                                    <?php if ($order['ACTION'] != 'CONFIRMED'): ?>
+                                        <a href="confirmrequests.php?REQUEST_NO=<?php echo htmlspecialchars($order['REQUEST_NO']); ?>&CONFIRMED=true&OEM=<?php echo htmlspecialchars($order['OEM']); ?>&CARTRIDGE=<?php echo htmlspecialchars(isset($_POST["CARTRIDGE_{$order['REQUEST_NO']}"]) ? $_POST["CARTRIDGE_{$order['REQUEST_NO']}"] : ''); ?>" class="btn">Confirm</a>
+                                    <?php else: ?>
+                                        CONFIRMED
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="btn-container">
+                <button type="submit" name="confirm_batch">Confirm Selected</button>
+            </div>
+        </form>
+    </div>
 </body>
 </html>
