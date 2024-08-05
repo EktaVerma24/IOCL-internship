@@ -8,7 +8,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION
 }
 
 include 'partials/connect.php';
-include 'partials/connect.php';
+
+// Get admin email
 $admin_email_query = "SELECT EMAIL_ID FROM admin LIMIT 1";
 $admin_email_result = mysqli_query($conn, $admin_email_query);
 
@@ -46,67 +47,86 @@ $sort_order = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'DESC';
 $complaints = getComplaints($filter_date, $filter_action, $sort_order);
 
 // Process confirmation request
-if (isset($_GET['COMPLAINT_ID'], $_GET['CONFIRMED'])) {
-    $COMPLAINT_ID = $_GET['COMPLAINT_ID'];
-    $CONFIRMED = $_GET['CONFIRMED'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_complaint'])) {
+    $complaint_id = $_POST['complaint_id'];
+    $remark = $_POST['remark'];
 
-    $sql = "SELECT user_details.EMAIL_ID, user_details.USER 
-            FROM complaints
-            INNER JOIN user_details ON complaints.USER_ID = user_details.USER_ID
-            WHERE complaints.COMPLAINT_ID = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('s', $COMPLAINT_ID);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $USER = $row['USER'];
-        $EMAIL = $row['EMAIL_ID'];
-
-        // Send confirmation email
-        require "smtp/PHPMailerAutoload.php";
-        
-        // Initialize PHPMailer object
-        $mail = new PHPMailer(true);
-        
-        // SMTP configuration
-        $mail->isSMTP();
-        $mail->Host = "smtp.gmail.com";
-        $mail->Port = 587;
-        $mail->SMTPSecure = 'tls';
-        $mail->SMTPAuth = true;
-        $mail->Username = "ekta24v@gmail.com"; // Replace with your email address
-        $mail->Password = "xfujamtssarffzlo"; // Replace with your email password
-        
-        // Sender email address
-        $mail->setFrom($admin_email);
-        
-        // Add recipient and body content
-        $mail->addAddress($EMAIL);
-        $mail->isHTML(true);
-        $mail->Subject = "Complaint Confirmation";
-        $mail->Body = "<h1>Confirm Your Complaint Resolvation...</h1>
-        <p><a href=\"http://localhost/project/userconfirmcomplaints.php?USER={$USER}&COMPLAINT_ID={$COMPLAINT_ID}&timestamp=" . time() . "\" style=\"padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 4px;\">Confirm Complaint</a></p>";
-    
-        try {
-            // Send email
-            $mail->send();
-
-            // Update complaint action to 'CONFIRMED'
-            $query_update = "UPDATE complaints SET ACTION='CONFIRMED' WHERE COMPLAINT_ID='$COMPLAINT_ID'";
-            $result_update = mysqli_query($conn, $query_update);
-
-            if ($result_update) {
-                $_SESSION['notification'] = "Complaint #$COMPLAINT_ID has been confirmed and notification emails have been sent.";
-            } else {
-                $_SESSION['notification'] = "Error updating complaint: " . mysqli_error($conn);
-            }
-        } catch (Exception $e) {
-            $_SESSION['notification'] = "Email sending failed. Error: {$mail->ErrorInfo}";
-        }
+    if (empty($remark)) {
+        $_SESSION['notification'] = "Remark is required for Complaint #$complaint_id. Please add a remark to confirm.";
     } else {
-        $_SESSION['notification'] = "No confirmation required.";
+        $confirmation_time = date('Y-m-d H:i:s');
+
+        // Fetch complaint date and time to calculate turnaround time
+        $complaint_query = "SELECT DATE, TIME FROM complaints WHERE COMPLAINT_ID=?";
+        $stmt = $conn->prepare($complaint_query);
+        $stmt->bind_param('s', $complaint_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $complaint = $result->fetch_assoc();
+        
+        $complaint_date_time = $complaint['DATE'] . ' ' . $complaint['TIME'];
+        
+        // Calculate turnaround time in seconds
+        $turnaround_seconds = strtotime($confirmation_time) - strtotime($complaint_date_time);
+        
+        // Calculate turnaround time in days, hours, and minutes
+        $turnaround_days = floor($turnaround_seconds / (3600 * 24));
+        $turnaround_hours = floor(($turnaround_seconds % (3600 * 24)) / 3600);
+        $turnaround_minutes = floor(($turnaround_seconds % 3600) / 60);
+        $turnaround_time = sprintf('%d days %02d hours %02d minutes', $turnaround_days, $turnaround_hours, $turnaround_minutes);
+
+        // Update complaint action to 'CONFIRMED' and set remarks, confirmation time, and turnaround time
+        $stmt = $conn->prepare("UPDATE complaints SET ACTION='CONFIRMED', REMARKS=?, CONFIRMATION_TIME=?, TURNAROUND_TIME=? WHERE COMPLAINT_ID=?");
+        $stmt->bind_param('ssss', $remark, $confirmation_time, $turnaround_time, $complaint_id);
+        $stmt->execute();
+
+        // Fetch user details
+        $sql = "SELECT user_details.EMAIL_ID, user_details.USER FROM complaints
+                INNER JOIN user_details ON complaints.USER_ID = user_details.USER_ID
+                WHERE complaints.COMPLAINT_ID = ?";
+        $stmt->prepare($sql);
+        $stmt->bind_param('s', $complaint_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $USER = $row['USER'];
+            $EMAIL = $row['EMAIL_ID'];
+
+            // Send confirmation email
+            require "smtp/PHPMailerAutoload.php";
+            
+            // Initialize PHPMailer object
+            $mail = new PHPMailer(true);
+            
+            // SMTP configuration
+            $mail->isSMTP();
+            $mail->Host = "smtp.gmail.com";
+            $mail->Port = 587;
+            $mail->SMTPSecure = 'tls';
+            $mail->SMTPAuth = true;
+            $mail->Username = "ekta24v@gmail.com"; // Replace with your email address
+            $mail->Password = "xfujamtssarffzlo"; // Replace with your email password
+            
+            // Sender email address
+            $mail->setFrom($admin_email);
+            
+            // Add recipient and body content
+            $mail->addAddress($EMAIL);
+            $mail->isHTML(true);
+            $mail->Subject = "Complaint Confirmation";
+            $mail->Body = "<h1>Confirm Your Complaint Resolvation...</h1>
+            <p><a href=\"http://localhost/project/userconfirmcomplaints.php?USER={$USER}&COMPLAINT_ID={$complaint_id}&timestamp=" . time() . "\" style=\"padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 4px;\">Confirm Complaint</a></p>";
+        
+            try {
+                // Send email
+                $mail->send();
+                $_SESSION['notification'] = "Complaint #$complaint_id has been confirmed and notification emails have been sent.";
+            } catch (Exception $e) {
+                $_SESSION['notification'] = "Email sending failed. Error: {$mail->ErrorInfo}";
+            }
+        }
     }
 
     // Redirect to the same page after updates
@@ -119,29 +139,28 @@ if (isset($_GET['clear_filters'])) {
     header("location: confirmcomplaints.php");
     exit;
 }
-
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONFIRM COMPLAINTS PAGE</title>
+    <title>Confirm Complaints</title>
     <style>
         body {
-            font-family: Tahoma, sans-serif;
-            background-color: #f0f0f0;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f9f9f9;
             margin: 0;
             padding: 0;
         }
         .container {
             width: 80%;
-            margin: 20px auto;
-            background-color: #fff;
+            background-color: #ffffff;
             padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 5px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            margin-top: 80px;
+            margin-left: 120px;
         }
         table {
             width: 100%;
@@ -150,7 +169,7 @@ if (isset($_GET['clear_filters'])) {
         }
         th, td {
             border: 1px solid #ddd;
-            padding: 20px;
+            padding: 12px;
             text-align: left;
         }
         th {
@@ -159,213 +178,160 @@ if (isset($_GET['clear_filters'])) {
         nav {
             background-color: #031854;
             color: #fff;
-            padding: 10px;
+            padding: 15px 30px;
             width: 100%;
             box-sizing: border-box;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            height: 60px;
+        }
+        nav h1 {
+            margin: 0;
+            font-size: 24px;
         }
         nav ul {
             list-style-type: none;
             padding: 0;
             margin: 0;
             display: flex;
-        }
-        nav ul li {
-            margin-right: 10px;
+            gap: 20px;
         }
         nav ul li a {
             color: #fff;
             text-decoration: none;
-            padding: 10px 15px;
+            padding: 10px 10px;
             display: block;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
         }
         nav ul li a:hover {
             background-color: #FF4900;
             border-radius: 5px;
-            transition: background-color 0.3s ease;
         }
-        .welcome-message {
-            color: #333;
-            font-size: 1.2em;
-            margin-bottom: 10px;
-        }
-        
-        .pending {
-            background-color: #f8d7da;
+        .confirmed {
+            background-color: #c3e6cb; /* Light green color for confirmed requests */
         }
         .notification {
-            background-color: #4CAF50;
-            color: white;
+            background-color: #c3e6cb;
+            color: #155724;
             text-align: center;
             padding: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            border: 1px solid #155724;
         }
-        .filter-form {
+        .filter-section {
             margin-bottom: 20px;
         }
-        .filter-form select, .filter-form input {
-            margin-right: 10px;
+        .filter-section form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
-        .clear-filters {
-            margin-bottom: 20px;
-        }
-        .clear-filters button {
-            background-color: #031854;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            cursor: pointer;
+        .filter-section select, .filter-section input[type="date"] {
+            padding: 8px;
+            border: 1px solid #ddd;
             border-radius: 4px;
+        }
+        .filter-section button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
             transition: background-color 0.3s ease;
         }
-        .clear-filters button:hover {
-            background-color: #FF4900;
+        .filter-section button:hover {
+            background-color: #0056b3;
         }
-        .CR{ 
-            background-color: #09ABBE;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
-            width: 100%;
-            height: 100%;
-           
+        .filter-section a {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
         }
-        .CR:hover{
-            border: 3px solid #09ABBE;
-           background-color: #fff;
-           color: #09ABBE;
-        }
-        #filter_date {
-            padding: 5px;
-            margin-right: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        #filter_action {
-            padding: 5px;
-            margin-right: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        #sort_order {
-            padding: 5px;
-            margin-right: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        .filter {
-            background-color: #031854;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
-            font-size: 16px;
-        }
-        .filter:hover {
-            background-color: #FF4900;
-        }
-        .clear_filters {
-            background-color: #031854;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
-            font-size: 16px;
-        }
-        .clear_filters:hover {
-            background-color: #FF4900;
+        .filter-section a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <nav>
-        <div><h2>Confirm Requests</h2></div>
+        <h1>Complaint System</h1>
         <ul>
-           <li><a href="engineer.php">Home</a></li>
-           <li><a href="#" onclick="confirmLogout(event)">Logout</a>  </li>      </ul>
+            <li><a href="engineerdashboard.php">Dashboard</a></li>
+            <li><a href="complaintlist.php">Complaints List</a></li>
+            <li><a href="logout.php">Logout</a></li>
+        </ul>
     </nav>
-
     <div class="container">
-        <div class="welcome-message">Complaint Confirmation Page</div>
-
-        <?php if (isset($_SESSION['notification'])): ?>
-            <div class="notification"><?= $_SESSION['notification']; ?></div>
-            <?php unset($_SESSION['notification']); ?>
-        <?php endif; ?>
-
-        <div class="filter-form">
-            <form method="GET" action="confirmcomplaints.php">
-                <label for="filter_date">DATE:</label>
-                <input type="date" name="filter_date" id="filter_date" value="<?= htmlspecialchars($filter_date); ?>">
-                <label for="filter_action">SELECT ACTION:</label>
-                <select name="filter_action" id="filter_action">
+        <div class="filter-section">
+            <form action="confirmcomplaints.php" method="GET">
+                <input type="date" name="filter_date" value="<?php echo htmlspecialchars($filter_date); ?>">
+                <select name="filter_action">
                     <option value="">All Actions</option>
-                    <option value="PENDING" <?= $filter_action == 'PENDING' ? 'selected' : ''; ?>>Pending</option>
-                    <option value="CONFIRMED" <?= $filter_action == 'CONFIRMED' ? 'selected' : ''; ?>>Confirmed</option>
+                    <option value="CONFIRMED" <?php echo $filter_action == 'CONFIRMED' ? 'selected' : ''; ?>>Confirmed</option>
+                    <option value="PENDING" <?php echo $filter_action == 'PENDING' ? 'selected' : ''; ?>>Pending</option>
                 </select>
-                <label for="sort_order">SORT BY:</label>
-                <select name="sort_order" id="sort_order">
-                    <option value="ASC" <?= $sort_order == 'ASC' ? 'selected' : ''; ?>>Oldest First</option>
-                    <option value="DESC" <?= $sort_order == 'DESC' ? 'selected' : ''; ?>>Newest First</option>
-                 
+                <select name="sort_order">
+                    <option value="DESC" <?php echo $sort_order == 'DESC' ? 'selected' : ''; ?>>Newest First</option>
+                    <option value="ASC" <?php echo $sort_order == 'ASC' ? 'selected' : ''; ?>>Oldest First</option>
                 </select>
-                <button type="submit" class="filter">Filter</button>
-                <button type="submit" name="clear_filters" value="1" class="clear_filters">Clear Filters</button>
+                <button type="submit">Apply Filters</button>
+                <a href="confirmcomplaints.php?clear_filters=true">Clear Filters</a>
             </form>
         </div>
+
+        <?php if (isset($_SESSION['notification'])): ?>
+            <div class="notification">
+                <?php echo $_SESSION['notification']; unset($_SESSION['notification']); ?>
+            </div>
+        <?php endif; ?>
 
         <table>
             <thead>
                 <tr>
                     <th>Complaint ID</th>
-                    <th>User ID</th>
-                    <th>Complaint</th>
                     <th>Date</th>
                     <th>Time</th>
                     <th>Action</th>
-                    <th>Confirm</th>
+                    <th>Remarks</th>
+                    <th>Confirmation Time</th>
+                    <th>Turnaround Time</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
-                <?php if (empty($complaints)): ?>
-                    <tr>
-                        <td colspan="7" style="text-align:center;">No complaints found.</td>
+                <?php foreach ($complaints as $complaint): ?>
+                    <tr class="<?php echo $complaint['ACTION'] === 'CONFIRMED' ? 'confirmed' : ''; ?>">
+                        <td><?php echo htmlspecialchars($complaint['COMPLAINT_ID']); ?></td>
+                        <td><?php echo htmlspecialchars($complaint['DATE']); ?></td>
+                        <td><?php echo htmlspecialchars($complaint['TIME']); ?></td>
+                        <td><?php echo htmlspecialchars($complaint['ACTION']); ?></td>
+                        <td><?php echo htmlspecialchars($complaint['REMARKS']); ?></td>
+                        <td><?php echo htmlspecialchars($complaint['CONFIRMATION_TIME']); ?></td>
+                        <td><?php echo htmlspecialchars($complaint['TURNAROUND_TIME']) ?: 'N/A'; ?></td>
+                        <td>
+                            <?php if ($complaint['ACTION'] !== 'CONFIRMED'): ?>
+                                <form action="confirmcomplaints.php" method="POST">
+                                    <input type="hidden" name="complaint_id" value="<?php echo htmlspecialchars($complaint['COMPLAINT_ID']); ?>">
+                                    <input type="text" name="remark" placeholder="Add remark" required>
+                                    <button type="submit" name="confirm_complaint">Confirm</button>
+                                </form>
+                            <?php else: ?>
+                                Confirmed
+                            <?php endif; ?>
+                        </td>
                     </tr>
-                <?php else: ?>
-                    <?php foreach ($complaints as $complaint): ?>
-                        <tr class="<?= $complaint['ACTION'] === 'CONFIRMED' ? 'confirmed' : 'pending'; ?>">
-                            <td><?= htmlspecialchars($complaint['COMPLAINT_ID']); ?></td>
-                            <td><?= htmlspecialchars($complaint['USER_ID']); ?></td>
-                            <td><?= htmlspecialchars($complaint['COMPLAINTS']); ?></td>
-                            <td><?= htmlspecialchars($complaint['DATE']); ?></td>
-                            <td><?= htmlspecialchars($complaint['TIME']); ?></td>
-                            <td><?= htmlspecialchars($complaint['ACTION']); ?></td>
-                            <td>
-                                <?php if ($complaint['ACTION'] !== 'CONFIRMED'): ?>
-                                    <a href="confirmcomplaints.php?COMPLAINT_ID=<?= $complaint['COMPLAINT_ID']; ?>&CONFIRMED=1" class="CR">Confirm</a>
-                                <?php else: ?>
-                                    <span>N/A</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                <?php endforeach; ?>
             </tbody>
         </table>
     </div>
-    <script src="partials/logout.js"></script>
-
 </body>
 </html>

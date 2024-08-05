@@ -41,10 +41,8 @@ if (isset($_GET['REQUEST_NO'], $_GET['CONFIRMED'])) {
     // Check if request hasn't been confirmed and confirmation status isn't already set
     $check_query = "SELECT * FROM requests WHERE REQUEST_NO='$REQUEST_NO' AND ACTION != 'CONFIRMED' AND CONFIRMATION != 'CONFIRMED'";
     $check_result = mysqli_query($conn, $check_query);
-
-
-    // Redirect to the same page after updates
-    header("location: confirmrequests.php");
+   // Redirect to the same page after updates
+    header("location: viewrequests.php");
     exit;
 }
 
@@ -58,7 +56,7 @@ if (isset($_GET['sort'])) {
 // Handle filter clearing button action
 if (isset($_GET['clear_filters'])) {
     // Redirect to the page without filter parameters
-    header("location: confirmrequests.php");
+    header("location: viewrequests.php");
     exit;
 }
 
@@ -67,6 +65,24 @@ $filter_date = $_GET['filter_date'] ?? null;
 $filter_action = $_GET['filter_action'] ?? null;
 
 $requests = getFilteredRequests($filter_date, $filter_action, $sort_order);
+
+// Handle export to Excel
+if (isset($_GET['export']) && $_GET['export'] === 'excel') {
+    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Disposition: attachment; filename=requests.xls");
+    header("Pragma: no-cache");
+    header("Expires: 0");
+
+    $output = fopen("php://output", "w");
+    fputcsv($output, array('REQUEST NO', 'USER ID', 'USER', 'DATE', 'OEM', 'MODEL', 'CARTRIDGE', 'ACTION', 'CONFIRMATION'));
+
+    foreach ($requests as $row) {
+        fputcsv($output, $row);
+    }
+
+    fclose($output);
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -199,8 +215,8 @@ $requests = getFilteredRequests($filter_date, $filter_action, $sort_order);
         <h3>View All Requests</h3>
         <ul>
             <li><a href="officer.php">Home</a></li>
-        
-           <li><a href="#" onclick="confirmLogout(event)">Logout</a> </li>        </ul>
+            <li><a href="#" onclick="confirmLogout(event)">Logout</a></li>
+        </ul>
     </nav>
 
     <div class="container">
@@ -237,6 +253,11 @@ $requests = getFilteredRequests($filter_date, $filter_action, $sort_order);
                 <a href="viewrequests.php">
                     <button style="background-color: #dc3545;">Clear Filters</button>
                 </a>
+                
+                <!-- Export to Excel button -->
+                <a href="?filter_date=<?php echo urlencode($filter_date ?? ''); ?>&filter_action=<?php echo urlencode($filter_action ?? ''); ?>&sort=<?php echo urlencode($sort_order); ?>&export=excel">
+                    <button style="background-color: #28a745;">Export to Excel</button>
+                </a>
             </div>
         </div>
 
@@ -262,13 +283,12 @@ $requests = getFilteredRequests($filter_date, $filter_action, $sort_order);
                     <th>CARTRIDGE</th>
                     <th>ACTION</th>
                     <th>CONFIRMATION</th>
-                    
                 </tr>
             </thead>
             <tbody>
                 <?php
                 if (empty($requests)) {
-                    echo '<tr><td colspan="7">No requests found.</td></tr>';
+                    echo '<tr><td colspan="9">No requests found.</td></tr>';
                 } else {
                     foreach ($requests as $row) {
                         $rowClass = ($row['ACTION'] === 'CONFIRMED') ? 'confirmed' : '';
