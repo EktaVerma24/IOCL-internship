@@ -195,10 +195,7 @@ $message = '';
                 <i class="fas fa-comments"></i>
                 My Complaints
             </div>
-            <div class="grid-item" onclick="location.href='edituserdetails.php';">
-                <i class="fas fa-edit"></i>
-                Edit My Details
-            </div>
+         
         </div>
     </div>
     <script src="partials/logout.js"></script>

@@ -73,7 +73,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_complaint']))
         $turnaround_days = floor($turnaround_seconds / (3600 * 24));
         $turnaround_hours = floor(($turnaround_seconds % (3600 * 24)) / 3600);
         $turnaround_minutes = floor(($turnaround_seconds % 3600) / 60);
-        $turnaround_time = sprintf('%d days %02d hours %02d minutes', $turnaround_days, $turnaround_hours, $turnaround_minutes);
+        $turnaround_time = '';
+        if ($turnaround_days > 0) {
+            $turnaround_time .= "{$turnaround_days} days ";
+        }
+        if ($turnaround_hours > 0) {
+            $turnaround_time .= "{$turnaround_hours} hours ";
+        }
+        if ($turnaround_minutes > 0) {
+            $turnaround_time .= "{$turnaround_minutes} minutes";
+        }
 
         // Update complaint action to 'CONFIRMED' and set remarks, confirmation time, and turnaround time
         $stmt = $conn->prepare("UPDATE complaints SET ACTION='CONFIRMED', REMARKS=?, CONFIRMATION_TIME=?, TURNAROUND_TIME=? WHERE COMPLAINT_ID=?");
@@ -263,11 +272,10 @@ if (isset($_GET['clear_filters'])) {
 </head>
 <body>
     <nav>
-        <h1>Complaint System</h1>
+        <h1>Confirm Complaints</h1>
         <ul>
-            <li><a href="engineerdashboard.php">Dashboard</a></li>
-            <li><a href="complaintlist.php">Complaints List</a></li>
-            <li><a href="logout.php">Logout</a></li>
+            <li><a href="engineer.php">Home</a></li>
+            <li> <a href="#" onclick="confirmLogout(event)">Logout</a></li>
         </ul>
     </nav>
     <div class="container">
@@ -316,7 +324,36 @@ if (isset($_GET['clear_filters'])) {
                         <td><?php echo htmlspecialchars($complaint['ACTION']); ?></td>
                         <td><?php echo htmlspecialchars($complaint['REMARKS']); ?></td>
                         <td><?php echo htmlspecialchars($complaint['CONFIRMATION_TIME']); ?></td>
-                        <td><?php echo htmlspecialchars($complaint['TURNAROUND_TIME']) ?: 'N/A'; ?></td>
+                        <td>
+                            <?php
+                            if ($complaint['CONFIRMATION_TIME']) {
+                                $complaint_date_time = $complaint['DATE'] . ' ' . $complaint['TIME'];
+                                $confirmation_time = $complaint['CONFIRMATION_TIME'];
+                                
+                                // Calculate turnaround time in seconds
+                                $turnaround_seconds = strtotime($confirmation_time) - strtotime($complaint_date_time);
+
+                                // Calculate turnaround time in days, hours, and minutes
+                                $turnaround_days = floor($turnaround_seconds / (3600 * 24));
+                                $turnaround_hours = floor(($turnaround_seconds % (3600 * 24)) / 3600);
+                                $turnaround_minutes = floor(($turnaround_seconds % 3600) / 60);
+                                $turnaround_time = '';
+                                if ($turnaround_days > 0) {
+                                    $turnaround_time .= "{$turnaround_days}d ";
+                                }
+                                if ($turnaround_hours > 0) {
+                                    $turnaround_time .= "{$turnaround_hours}h ";
+                                }
+                                if ($turnaround_minutes > 0) {
+                                    $turnaround_time .= "{$turnaround_minutes}m ";
+                                }
+
+                                echo htmlspecialchars($turnaround_time);
+                            } else {
+                                echo 'N/A';
+                            }
+                            ?>
+                        </td>
                         <td>
                             <?php if ($complaint['ACTION'] !== 'CONFIRMED'): ?>
                                 <form action="confirmcomplaints.php" method="POST">
@@ -333,5 +370,6 @@ if (isset($_GET['clear_filters'])) {
             </tbody>
         </table>
     </div>
+    <script src="partials/logout.js"></script>
 </body>
 </html>

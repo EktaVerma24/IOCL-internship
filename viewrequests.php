@@ -65,26 +65,7 @@ $filter_date = $_GET['filter_date'] ?? null;
 $filter_action = $_GET['filter_action'] ?? null;
 
 $requests = getFilteredRequests($filter_date, $filter_action, $sort_order);
-
-// Handle export to Excel
-if (isset($_GET['export']) && $_GET['export'] === 'excel') {
-    header("Content-Type: application/vnd.ms-excel");
-    header("Content-Disposition: attachment; filename=requests.xls");
-    header("Pragma: no-cache");
-    header("Expires: 0");
-
-    $output = fopen("php://output", "w");
-    fputcsv($output, array('REQUEST NO', 'USER ID', 'USER', 'DATE', 'OEM', 'MODEL', 'CARTRIDGE', 'ACTION', 'CONFIRMATION'));
-
-    foreach ($requests as $row) {
-        fputcsv($output, $row);
-    }
-
-    fclose($output);
-    exit;
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -237,6 +218,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
                 </select>
                 
                 <button type="submit">Filter</button>
+                <input type="hidden" name="sort" value="<?php echo htmlspecialchars($sort_order); ?>">
             </form>
             
             <!-- Add sorting and filter clearing buttons -->
@@ -253,10 +235,8 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
                 <a href="viewrequests.php">
                     <button style="background-color: #dc3545;">Clear Filters</button>
                 </a>
-                
-                <!-- Export to Excel button -->
-                <a href="?filter_date=<?php echo urlencode($filter_date ?? ''); ?>&filter_action=<?php echo urlencode($filter_action ?? ''); ?>&sort=<?php echo urlencode($sort_order); ?>&export=excel">
-                    <button style="background-color: #28a745;">Export to Excel</button>
+                <a href="exportrequests.php?filter_date=<?php echo urlencode($filter_date ?? ''); ?>&filter_action=<?php echo urlencode($filter_action ?? ''); ?>&sort=<?php echo urlencode($sort_order); ?>">
+                    <button style="background-color:green;">Export</button>
                 </a>
             </div>
         </div>
@@ -291,17 +271,16 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
                     echo '<tr><td colspan="9">No requests found.</td></tr>';
                 } else {
                     foreach ($requests as $row) {
-                        $rowClass = ($row['ACTION'] === 'CONFIRMED') ? 'confirmed' : '';
-                        echo '<tr class="' . $rowClass . '">';
-                        echo '<td>' . $row['REQUEST_NO'] . '</td>';
-                        echo '<td>' . $row['USER_ID'] . '</td>';
-                        echo '<td>' . $row['USER'] . '</td>';
-                        echo '<td>' . $row['DATE'] . '</td>';
-                        echo '<td>' . $row['OEM'] . '</td>';
-                        echo '<td>' . $row['MODEL'] . '</td>';
-                        echo '<td>' . $row['CARTRIDGE'] . '</td>';
-                        echo '<td>' . $row['ACTION'] . '</td>';
-                        echo '<td>' . $row['CONFIRMATION'] . '</td>';
+                        echo '<tr' . ($row['ACTION'] === 'CONFIRMED' ? ' class="confirmed"' : '') . '>';
+                        echo '<td>' . htmlspecialchars($row['REQUEST_NO']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['USER_ID']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['USER']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['DATE']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['OEM']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['MODEL']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['CARTRIDGE']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['ACTION']) . '</td>';
+                        echo '<td>' . htmlspecialchars($row['CONFIRMATION']) . '</td>';
                         echo '</tr>';
                     }
                 }
@@ -309,7 +288,14 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
             </tbody>
         </table>
     </div>
-    <script src="partials/logout.js"></script>
 
+    <script>
+        function confirmLogout(event) {
+            event.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = 'logout.php';
+            }
+        }
+    </script>
 </body>
 </html>

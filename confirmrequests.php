@@ -8,6 +8,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || $_SESSION
 }
 
 include 'partials/connect.php';
+
+// Fetch admin email
 $admin_email_query = "SELECT EMAIL_ID FROM admin LIMIT 1";
 $admin_email_result = mysqli_query($conn, $admin_email_query);
 
@@ -68,7 +70,7 @@ if (isset($_GET['REQUEST_NO'], $_GET['CONFIRMED'], $_GET['OEM'])) {
     $CARTRIDGE = isset($_GET['CARTRIDGE']) ? mysqli_real_escape_string($conn, $_GET['CARTRIDGE']) : '';
     $OEM = $_GET['OEM'];
 
-    $sql = "SELECT user_details.EMAIL_ID, user_details.USER 
+    $sql = "SELECT user_details.EMAIL_ID, user_details.USER, requests.DATE, requests.TIME
             FROM requests
             INNER JOIN user_details ON requests.USER_ID = user_details.USER_ID
             WHERE requests.REQUEST_NO = ?";
@@ -81,51 +83,62 @@ if (isset($_GET['REQUEST_NO'], $_GET['CONFIRMED'], $_GET['OEM'])) {
         $row = $result->fetch_assoc();
         $USER = $row['USER'];
         $EMAIL = $row['EMAIL_ID'];
+        $REQUEST_DATE = $row['DATE'];
+        $REQUEST_TIME = $row['TIME'];
 
-        // Send confirmation email
-        require "smtp/PHPMailerAutoload.php";
-        
-        // Initialize PHPMailer object
-        $mail = new PHPMailer(true);
-        
-        // SMTP configuration
-        $mail->isSMTP();
-        $mail->Host = "smtp.gmail.com";
-        $mail->Port = 587;
-        $mail->SMTPSecure = 'tls';
-        $mail->SMTPAuth = true;
-        $mail->Username = "ekta24v@gmail.com"; // Replace with your email address
-        $mail->Password = "xfujamtssarffzlo"; // Replace with your email password
-        
-        // Sender email address
-        $mail->setFrom($admin_email);
-        
-        // Add recipient and body content
-        $mail->addAddress($EMAIL);
-        $mail->isHTML(true);
-        $mail->Subject = "Request Confirmation";
-        $mail->Body = "<h1>Confirm Your Request</h1>
-        <p><a href=\"http://localhost/project/userconfirmrequests.php?USER={$USER}&REQUEST_NO={$REQUEST_NO}&timestamp=" . time() . "\" style=\"padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 4px;\">Confirm Request</a></p>";
-    
-        try {
-            // Send email
-            $mail->send();
+        $CONFIRMATION_TIME = date('Y-m-d H:i:s');
+        $query_update = "UPDATE requests SET ACTION='CONFIRMED', CONFIRMATION_TIME='$CONFIRMATION_TIME'";
+        if (!empty($CARTRIDGE)) {
+            $query_update .= ", CARTRIDGE='$CARTRIDGE'";
+        }
+        $query_update .= " WHERE REQUEST_NO='$REQUEST_NO'";
+        $result_update = mysqli_query($conn, $query_update);
 
-            // Update request action to 'CONFIRMED' and CARTRIDGE if provided
-            $query_update = "UPDATE requests SET ACTION='CONFIRMED'";
-            if (!empty($CARTRIDGE)) {
-                $query_update .= ", CARTRIDGE='$CARTRIDGE'";
+        if ($result_update) {
+            $turnaround_time_seconds = strtotime($CONFIRMATION_TIME) - strtotime("$REQUEST_DATE $REQUEST_TIME");
+
+            // Convert seconds to days, hours, and minutes
+            $days = floor($turnaround_time_seconds / 86400); // 86400 seconds in a day
+            $hours = floor(($turnaround_time_seconds % 86400) / 3600); // 3600 seconds in an hour
+            $minutes = floor(($turnaround_time_seconds % 3600) / 60); // 60 seconds in a minute
+
+            $turnaround_time = '';
+            if ($days > 0) {
+                $turnaround_time .= "{$days}d ";
             }
-            $query_update .= " WHERE REQUEST_NO='$REQUEST_NO'";
-            $result_update = mysqli_query($conn, $query_update);
+            if ($hours > 0) {
+                $turnaround_time .= "{$hours}h ";
+            }
+            if ($minutes > 0) {
+                $turnaround_time .= "{$minutes}m";
+            }
 
-            if ($result_update) {
+            // Send confirmation email
+            require "smtp/PHPMailerAutoload.php";
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host = "smtp.gmail.com";
+            $mail->Port = 587;
+            $mail->SMTPSecure = 'tls';
+            $mail->SMTPAuth = true;
+            $mail->Username = "ekta24v@gmail.com"; // Replace with your email address
+            $mail->Password = "xfujamtssarffzlo"; // Replace with your email password
+
+            $mail->setFrom($admin_email);
+            $mail->addAddress($EMAIL);
+            $mail->isHTML(true);
+            $mail->Subject = "Request Confirmation";
+            $mail->Body = "<h1>Confirm Your Request</h1>
+            <p><a href=\"http://localhost/project/userconfirmrequests.php?USER={$USER}&REQUEST_NO={$REQUEST_NO}&timestamp=" . time() . "\" style=\"padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 4px;\">Confirm Request</a></p>";
+
+            try {
+                $mail->send();
                 $_SESSION['notification'] = "Request #$REQUEST_NO has been confirmed and notification emails have been sent.";
-            } else {
-                $_SESSION['notification'] = "Error updating request: " . mysqli_error($conn);
+            } catch (Exception $e) {
+                $_SESSION['notification'] = "Email sending failed. Error: {$mail->ErrorInfo}";
             }
-        } catch (Exception $e) {
-            $_SESSION['notification'] = "Email sending failed. Error: {$mail->ErrorInfo}";
+        } else {
+            $_SESSION['notification'] = "Error updating request: " . mysqli_error($conn);
         }
     } else {
         $_SESSION['notification'] = "No confirmation required.";
@@ -141,11 +154,7 @@ if (isset($_POST['confirm_batch'])) {
     $selected_requests = isset($_POST['selected_requests']) ? $_POST['selected_requests'] : [];
 
     require "smtp/PHPMailerAutoload.php";
-    
-    // Initialize PHPMailer object
     $mail = new PHPMailer(true);
-    
-    // SMTP configuration
     $mail->isSMTP();
     $mail->Host = "smtp.gmail.com";
     $mail->Port = 587;
@@ -153,23 +162,13 @@ if (isset($_POST['confirm_batch'])) {
     $mail->SMTPAuth = true;
     $mail->Username = "ekta24v@gmail.com"; // Replace with your email address
     $mail->Password = "xfujamtssarffzlo"; // Replace with your email password
-    
-    // Sender email address
+
     $mail->setFrom("ekta24v@gmail.com");
 
     foreach ($selected_requests as $request_no) {
         $cartridge = isset($_POST["CARTRIDGE_$request_no"]) ? mysqli_real_escape_string($conn, $_POST["CARTRIDGE_$request_no"]) : '';
 
-        // Update request action to 'CONFIRMED'
-        $query_update = "UPDATE requests SET ACTION='CONFIRMED'";
-        if (!empty($cartridge)) {
-            $query_update .= ", CARTRIDGE='$cartridge'";
-        }
-        $query_update .= " WHERE REQUEST_NO='$request_no'";
-        mysqli_query($conn, $query_update);
-
-        // Fetch user details for sending email
-        $sql = "SELECT user_details.EMAIL_ID, user_details.USER 
+        $sql = "SELECT requests.DATE, requests.TIME, user_details.EMAIL_ID, user_details.USER 
                 FROM requests
                 INNER JOIN user_details ON requests.USER_ID = user_details.USER_ID
                 WHERE requests.REQUEST_NO = ?";
@@ -182,8 +181,35 @@ if (isset($_POST['confirm_batch'])) {
             $row = $result->fetch_assoc();
             $USER = $row['USER'];
             $EMAIL = $row['EMAIL_ID'];
+            $REQUEST_DATE = $row['DATE'];
+            $REQUEST_TIME = $row['TIME'];
 
-            // Add recipient and body content for each request
+            $CONFIRMATION_TIME = date('Y-m-d H:i:s');
+            $query_update = "UPDATE requests SET ACTION='CONFIRMED', CONFIRMATION_TIME='$CONFIRMATION_TIME'";
+            if (!empty($cartridge)) {
+                $query_update .= ", CARTRIDGE='$cartridge'";
+            }
+            $query_update .= " WHERE REQUEST_NO='$request_no'";
+            mysqli_query($conn, $query_update);
+
+            $turnaround_time_seconds = strtotime($CONFIRMATION_TIME) - strtotime("$REQUEST_DATE $REQUEST_TIME");
+
+            // Convert seconds to days, hours, and minutes
+            $days = floor($turnaround_time_seconds / 86400); // 86400 seconds in a day
+            $hours = floor(($turnaround_time_seconds % 86400) / 3600); // 3600 seconds in an hour
+            $minutes = floor(($turnaround_time_seconds % 3600) / 60); // 60 seconds in a minute
+
+            $turnaround_time = '';
+            if ($days > 0) {
+                $turnaround_time .= "{$days}d ";
+            }
+            if ($hours > 0) {
+                $turnaround_time .= "{$hours}h ";
+            }
+            if ($minutes > 0) {
+                $turnaround_time .= "{$minutes}m";
+            }
+
             $mail->addAddress($EMAIL);
             $mail->isHTML(true);
             $mail->Subject = "CONFIRM YOUR REQUEST";
@@ -191,7 +217,6 @@ if (isset($_POST['confirm_batch'])) {
             <p><a href=\"http://localhost/project/userconfirmrequests.php?USER={$USER}&REQUEST_NO={$request_no}&timestamp=" . time() . "\" style=\"padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 4px;\">Confirm Request</a></p>";
 
             try {
-                // Send email
                 $mail->send();
             } catch (Exception $e) {
                 $_SESSION['notification'] = "Email sending failed. Error: {$mail->ErrorInfo}";
@@ -236,6 +261,25 @@ if (isset($_GET['clear_filters'])) {
             justify-content: space-between;
             align-items: center;
         }
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            gap: 10px;
+        }
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 10px;
+            display: block;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        nav ul li a:hover {
+            background-color: #FF4900;
+            border-radius: 5px;
+        }
         nav a {
             color: #fff;
             text-decoration: none;
@@ -247,11 +291,16 @@ if (isset($_GET['clear_filters'])) {
             border-radius: 4px;
         }
         .container {
+            /* width: 0vw; */
             padding: 20px;
             max-width: 1200px;
             margin: 20px auto;
             background-color: #fff;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .form-container {
+            width: 90vw;
         }
         h1 {
             text-align: center;
@@ -265,8 +314,8 @@ if (isset($_GET['clear_filters'])) {
         form input[type="date"],
         form select {
             margin: 0 10px;
-            padding: 10px;
-            font-size: 16px;
+            padding: 5px;
+            font-size: 14px;
             border-radius: 4px;
             border: 1px solid #ddd;
             width: 200px;
@@ -281,6 +330,8 @@ if (isset($_GET['clear_filters'])) {
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            margin-left: 10px;
+            text-decoration: none;
         }
         form button:hover,
         .btn:hover {
@@ -288,19 +339,19 @@ if (isset($_GET['clear_filters'])) {
         }
         .table-container {
             overflow-x: auto;
-            width: full;
+            width: 80vw;
         }
         table {
-            width: 90%;
+            /* width: 1vw; */
             border-collapse: collapse;
             margin-bottom: 20px;
         }
         table th,
         table td {
-            padding: 10px;
+            padding: 5px;
             border: 1px solid #ddd;
             text-align: left;
-            font-size: 16px;
+            font-size: 14px;
         }
         table th {
             background-color: #f8f8f8;
@@ -309,16 +360,39 @@ if (isset($_GET['clear_filters'])) {
             background-color: #f9f9f9;
         }
         .btn-container {
-            text-align: center;
+            text-align: center;  
+            padding: 2px;
+        }
+        .btn2{
+            padding: 5px 10px;
+            font-size: 16px;
+            background-color: #031854;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-left: 5px;
+            margin-right: 10px;
+           
+        }
+        .notification {
+            padding: 1px;
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <nav>
-        <div>Welcome, Engineer</div>
-        <div>
-            <a href="logout.php" class="btn">Logout</a>
-        </div>
+<nav>
+        <h1>Confirm Requests</h1>
+        <ul>
+            <li><a href="engineer.php">Home</a></li>
+            <li> <a href="#" onclick="confirmLogout(event)">Logout</a></li>
+        </ul>
     </nav>
 
     <div class="container">
@@ -341,7 +415,7 @@ if (isset($_GET['clear_filters'])) {
             </div>
         <?php endif; ?>
 
-        <form action="confirmrequests.php" method="post">
+        <form class="form-container" action="confirmrequests.php" method="post">
             <div class="table-container">
                 <table>
                     <thead>
@@ -356,6 +430,8 @@ if (isset($_GET['clear_filters'])) {
                             <th>Time</th>
                             <th>Action</th>
                             <th>Cartridge</th>
+                            <th>Confirmation Time</th>
+                            <th>Turnaround Time</th>
                             <th>Confirm</th>
                         </tr>
                     </thead>
@@ -394,6 +470,40 @@ if (isset($_GET['clear_filters'])) {
                                     }
                                     ?>
                                 </td>
+                                <td>
+                                    <?php
+                                    echo $order['CONFIRMATION_TIME'] ? htmlspecialchars($order['CONFIRMATION_TIME']) : 'Not Confirmed';
+                                    ?>
+                                </td>
+                                <td>
+                                    <?php
+                                    if ($order['CONFIRMATION_TIME']) {
+                                        $request_time = strtotime($order['DATE'] . ' ' . $order['TIME']);
+                                        $confirmation_time = strtotime($order['CONFIRMATION_TIME']);
+                                        $turnaround_time_seconds = $confirmation_time - $request_time;
+
+                                        // Convert seconds to days, hours, and minutes
+                                        $days = floor($turnaround_time_seconds / 86400); // 86400 seconds in a day
+                                        $hours = floor(($turnaround_time_seconds % 86400) / 3600); // 3600 seconds in an hour
+                                        $minutes = floor(($turnaround_time_seconds % 3600) / 60); // 60 seconds in a minute
+
+                                        $turnaround_time = '';
+                                        if ($days > 0) {
+                                            $turnaround_time .= "{$days}d ";
+                                        }
+                                        if ($hours > 0) {
+                                            $turnaround_time .= "{$hours}h ";
+                                        }
+                                        if ($minutes > 0) {
+                                            $turnaround_time .= "{$minutes}m";
+                                        }
+
+                                        echo htmlspecialchars($turnaround_time);
+                                    } else {
+                                        echo 'N/A';
+                                    }
+                                    ?>
+                                </td>
                                 <td class="cnfrm button">
                                     <?php if ($order['ACTION'] != 'CONFIRMED'): ?>
                                         <a href="confirmrequests.php?REQUEST_NO=<?php echo htmlspecialchars($order['REQUEST_NO']); ?>&CONFIRMED=true&OEM=<?php echo htmlspecialchars($order['OEM']); ?>&CARTRIDGE=<?php echo htmlspecialchars(isset($_POST["CARTRIDGE_{$order['REQUEST_NO']}"]) ? $_POST["CARTRIDGE_{$order['REQUEST_NO']}"] : ''); ?>" class="btn">Confirm</a>
@@ -408,9 +518,11 @@ if (isset($_GET['clear_filters'])) {
             </div>
 
             <div class="btn-container">
-                <button type="submit" name="confirm_batch">Confirm Selected</button>
+                <button class="btn2" type="submit" name="confirm_batch">Confirm Selected</button>
             </div>
         </form>
     </div>
+    <script src="partials/logout.js"></script>
+
 </body>
 </html>

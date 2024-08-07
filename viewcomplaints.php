@@ -63,11 +63,7 @@ if (isset($_GET['COMPLAINT_ID'], $_GET['ACTION'])) {
 }
 
 // Handle sorting button action
-if (isset($_GET['sort'])) {
-    $sort_order = $_GET['sort'];
-} else {
-    $sort_order = 'DESC'; // Default sorting order (latest date first)
-}
+$sort_order = isset($_GET['sort']) ? $_GET['sort'] : 'DESC'; // Default sorting order (latest date first)
 
 // Handle filter clearing button action
 if (isset($_GET['clear_filters'])) {
@@ -77,17 +73,8 @@ if (isset($_GET['clear_filters'])) {
 }
 
 // Fetch all complaints or filtered complaints
-if (isset($_GET['filter_date'])) {
-    $filter_date = $_GET['filter_date'];
-} else {
-    $filter_date = null;
-}
-
-if (isset($_GET['filter_action'])) {
-    $filter_action = $_GET['filter_action'];
-} else {
-    $filter_action = null;
-}
+$filter_date = isset($_GET['filter_date']) ? $_GET['filter_date'] : null;
+$filter_action = isset($_GET['filter_action']) ? $_GET['filter_action'] : null;
 
 $complaints = getFilteredComplaints($filter_date, $filter_action, $sort_order);
 ?>
@@ -188,7 +175,7 @@ $complaints = getFilteredComplaints($filter_date, $filter_action, $sort_order);
             border: 1px solid #ccc;
             border-radius: 3px;
         }
-        .filter-section button{
+        .filter-section button {
             padding: 8px 15px;
             background-color: #031854;
             color: white;
@@ -208,8 +195,9 @@ $complaints = getFilteredComplaints($filter_date, $filter_action, $sort_order);
     <div class="navbar">
         <h3>View Complaints</h3>
         <ul>
-            <a href="officer.php">HOME</a>
-            <a href="#" onclick="confirmLogout(event)">LOGOUT</a>        </ul>
+            <a href="officer.php">Home</a>
+            <a href="#" onclick="confirmLogout(event)">Logout</a>
+        </ul>
     </div>
 
     <div class="container">
@@ -226,13 +214,13 @@ $complaints = getFilteredComplaints($filter_date, $filter_action, $sort_order);
         <div class="filter-section">
             <form action="" method="GET">
                 <label for="filter_date">Filter by Date:</label>
-                <input type="date" id="filter_date" name="filter_date" value="<?php echo htmlspecialchars(isset($_GET['filter_date']) ? $_GET['filter_date'] : ''); ?>">
+                <input type="date" id="filter_date" name="filter_date" value="<?php echo htmlspecialchars($filter_date); ?>">
                 
                 <label for="filter_action">Filter by Action:</label>
                 <select name="filter_action" id="filter_action">
                     <option value="">SELECT ACTION</option>
-                    <option value="PENDING" <?php echo ($_GET['filter_action'] ?? '') === 'PENDING' ? 'selected' : ''; ?>>PENDING</option>
-                    <option value="RESOLVED" <?php echo ($_GET['filter_action'] ?? '') === 'RESOLVED' ? 'selected' : ''; ?>>RESOLVED</option>
+                    <option value="PENDING" <?php echo ($filter_action === 'PENDING') ? 'selected' : ''; ?>>PENDING</option>
+                    <option value="CONFIRMED" <?php echo ($filter_action === 'CONFIRMED') ? 'selected' : ''; ?>>CONFIRMED</option>
                 </select>
                 
                 <button type="submit">Filter</button>
@@ -244,7 +232,7 @@ $complaints = getFilteredComplaints($filter_date, $filter_action, $sort_order);
                 $current_sort = isset($_GET['sort']) ? $_GET['sort'] : 'DESC';
                 $next_sort = ($current_sort === 'DESC') ? 'ASC' : 'DESC';
                 ?>
-                <a href="?filter_date=<?php echo urlencode($filter_date ?? ''); ?>&filter_action=<?php echo urlencode($filter_action ?? ''); ?>&sort=<?php echo $next_sort; ?>">
+                <a href="?filter_date=<?php echo urlencode($filter_date); ?>&filter_action=<?php echo urlencode($filter_action); ?>&sort=<?php echo $next_sort; ?>">
                     <button><?php echo ($current_sort === 'DESC') ? 'Sort Oldest First' : 'Sort Newest First'; ?></button>
                 </a>
                 
@@ -252,6 +240,14 @@ $complaints = getFilteredComplaints($filter_date, $filter_action, $sort_order);
                 <a href="viewcomplaints.php">
                     <button style="background-color: #dc3545;">Clear Filters</button>
                 </a>
+                
+                <!-- Export button -->
+                <form action="exportcomplaints.php" method="GET" style="display:inline;">
+                    <input type="hidden" name="filter_date" value="<?php echo htmlspecialchars($filter_date); ?>">
+                    <input type="hidden" name="filter_action" value="<?php echo htmlspecialchars($filter_action); ?>">
+                    <input type="hidden" name="sort" value="<?php echo htmlspecialchars($current_sort); ?>">
+                    <button type="submit" style="background-color: #28a745;">Export</button>
+                </form>
             </div>
         </div>
 
@@ -275,7 +271,7 @@ $complaints = getFilteredComplaints($filter_date, $filter_action, $sort_order);
                         // Determine row class based on status for styling
                         $row_class = '';
                         if ($row['STATUS'] === 'RESOLVED') {
-                            $row_class = 'confirmed';
+                            $row_class = 'RESOLVED';
                         }
                     ?>
                         <tr class="<?php echo htmlspecialchars($row_class); ?>">
@@ -299,6 +295,5 @@ $complaints = getFilteredComplaints($filter_date, $filter_action, $sort_order);
         </table>
     </div>
     <script src="partials/logout.js"></script>
-
 </body>
 </html>

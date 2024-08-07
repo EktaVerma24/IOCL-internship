@@ -75,13 +75,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         
         $stmt_update_printer->close();
+    } elseif (isset($_POST['remove_printer_data'])) {
+        // Remove printer data
+        $user_id = $_POST['user_id'];
+        $sql_remove_printer = "DELETE FROM user_printer_data WHERE USER_ID = ?";
+        $stmt_remove_printer = $conn->prepare($sql_remove_printer);
+        $stmt_remove_printer->bind_param("s", $user_id);
+        
+        if ($stmt_remove_printer->execute()) {
+            $message = "Printer data removed successfully.";
+            $printer_data = null; // Clear printer data in the view
+        } else {
+            $message = "Error removing printer data: " . $conn->error;
+        }
+        
+        $stmt_remove_printer->close();
     }
 }
 
 // Close database connection
 $conn->close();
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -94,7 +108,7 @@ $conn->close();
         html, body {
             height: 100%;
             margin: 0;
-           font-family: Tahoma, sans-serif;
+            font-family: Tahoma, sans-serif;
             background-color: #f4f6f8;
             display: flex;
             flex-direction: column;
@@ -253,6 +267,13 @@ $conn->close();
             background-color: #FF4900;
             transform: translateY(-5px);
         }
+
+        .remove-button {
+            background-color: #FF4900;
+            border: none;
+            color: #ffffff;
+            margin-top: 10px;
+        }
     </style>
     
 </head>
@@ -261,7 +282,8 @@ $conn->close();
         <h2>User Details</h2>
         <div>
             <a href="engineer.php">Home</a>
-            <a href="#" onclick="confirmLogout(event)">Logout</a>        </div>
+            <a href="#" onclick="confirmLogout(event)">Logout</a>
+        </div>
     </div>
 
     <div class="container">
@@ -306,6 +328,7 @@ $conn->close();
                             <label for="model">Model:</label>
                             <input style="width: 30vh;" type="text" id="model" name="model" value="<?php echo $printer_data['MODEL']; ?>" required>
                             <button style="margin-left: 20px;" type="submit" name="update_printer_data">Update Printer Data</button>
+                            <button class="remove-button" style="margin-left:16.5vw;" type="submit" name="remove_printer_data">Remove Printer Data</button>
                         </form>
                     <?php endif; ?>
                 </div>
